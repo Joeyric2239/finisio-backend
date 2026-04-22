@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Finisio Cleans — API Documentation</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+    pre { font-family: 'Fira Mono', 'Cascadia Code', 'Courier New', monospace; }
+    .method-get    { background:#dbeafe; color:#1e40af; }
+    .method-post   { background:#dcfce7; color:#166534; }
+    .method-patch  { background:#fef9c3; color:#854d0e; }
+    .method-delete { background:#fee2e2; color:#991b1b; }
+    .endpoint-card { border-left:4px solid #16a34a; }
+    details > summary { cursor: pointer; list-style: none; }
+    details > summary::-webkit-details-marker { display: none; }
+    details[open] > summary .chevron { transform: rotate(90deg); }
+    .chevron { transition: transform 0.2s ease; display:inline-block; }
+    code { background:#f1f5f9; padding:1px 6px; border-radius:4px; font-size:0.85em; }
+    .try-btn { transition: all 0.15s; }
+    .try-btn:hover { filter: brightness(0.9); }
+    .response-box { display:none; }
+    .response-box.visible { display:block; }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+  </style>
+</head>
+<body class="bg-gray-50 text-gray-900 min-h-screen">
+
+<!-- ═══════════════════════════════════════
+     HEADER
+═══════════════════════════════════════ -->
+<header class="bg-green-800 text-white shadow-xl">
+  <div class="max-w-6xl mx-auto px-6 py-6">
+    <div class="flex items-center gap-5">
+      <!-- FINISIO CLEANS LOGO (SVG recreation of the uploaded logo) -->
+      <div class="w-16 h-16 rounded-2xl bg-green-700 flex items-center justify-center shadow-lg flex-shrink-0" style="background:#1a5c32;">
+        <svg width="38" height="44" viewBox="0 0 38 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- Upper loop of the S -->
+          <path d="M28 6 C28 3, 25 1, 19 1 C10 1, 5 5, 5 12 C5 18, 9 21, 16 22 C23 23, 33 25, 33 33 C33 40, 27 43, 19 43 C11 43, 8 40, 8 37"
+                stroke="white" stroke-width="5.5" stroke-linecap="round" fill="none"/>
+          <!-- Diagonal slash through the S -->
+          <line x1="28" y1="5" x2="10" y2="38" stroke="white" stroke-width="5.5" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div>
+        <div class="flex items-center gap-3">
+          <div>
+            <p class="text-green-300 text-xs font-bold tracking-widest uppercase">FINISIO CLEANS</p>
+            <h1 class="text-2xl font-black text-white leading-tight">API Documentation</h1>
+          </div>
+          <span class="bg-green-600 text-green-100 text-xs font-bold px-2.5 py-1 rounded-full">v1.0.0</span>
+          <span class="bg-white/20 text-white text-xs font-bold px-2.5 py-1 rounded-full">MVP</span>
+        </div>
+        <p class="text-green-300 text-sm mt-1">Cleaning Marketplace Backend · Seychelles · Python stdlib · SQLite</p>
+      </div>
+    </div>
+
+    <!-- Base URL bar -->
+    <div class="mt-5 flex items-center gap-3 bg-black/30 rounded-xl px-4 py-3">
+      <span class="text-green-400 text-xs font-bold uppercase tracking-wide">Base URL</span>
+      <code class="text-white font-mono text-sm flex-1">http://localhost:8000</code>
+      <span class="text-green-400 text-xs">All responses: <code class="text-green-200">{"ok": true, "data": ...}</code></span>
+    </div>
+  </div>
+</header>
+
+<!-- ═══════════════════════════════════════
+     LAYOUT
+═══════════════════════════════════════ -->
+<div class="max-w-6xl mx-auto px-4 py-8 flex gap-6">
+
+  <!-- SIDEBAR NAV -->
+  <aside class="w-56 flex-shrink-0 hidden lg:block">
+    <div class="sticky top-6 bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
+      <p class="text-xs font-black text-gray-400 uppercase tracking-widest mb-3">Sections</p>
+      <nav class="space-y-1 text-sm">
+        <a href="#getting-started" class="block px-3 py-2 rounded-lg text-gray-700 hover:bg-green-50 hover:text-green-700 font-medium">🚀 Getting Started</a>
+        <a href="#workflow"        class="block px-3 py-2 rounded-lg text-gray-700 hover:bg-green-50 hover:text-green-700 font-medium">🔄 Job Workflow</a>
+        <a href="#users"           class="block px-3 py-2 rounded-lg text-gray-700 hover:bg-green-50 hover:text-green-700 font-medium">👤 Users</a>
+        <a href="#cleaners"        class="block px-3 py-2 rounded-lg text-gray-700 hover:bg-green-50 hover:text-green-700 font-medium">🧹 Cleaners</a>
+        <a href="#subscriptions"   class="block px-3 py-2 rounded-lg text-gray-700 hover:bg-green-50 hover:text-green-700 font-medium">📋 Subscriptions</a>
+        <a href="#bookings"        class="block px-3 py-2 rounded-lg text-gray-700 hover:bg-green-50 hover:text-green-700 font-medium">📅 Bookings</a>
+        <a href="#payments"        class="block px-3 py-2 rounded-lg text-gray-700 hover:bg-green-50 hover:text-green-700 font-medium">💳 Payments</a>
+        <a href="#commission"      class="block px-3 py-2 rounded-lg text-gray-700 hover:bg-green-50 hover:text-green-700 font-medium">📊 Commission</a>
+        <a href="#reviews"         class="block px-3 py-2 rounded-lg text-gray-700 hover:bg-green-50 hover:text-green-700 font-medium">⭐ Reviews</a>
+        <a href="#messages"        class="block px-3 py-2 rounded-lg text-gray-700 hover:bg-green-50 hover:text-green-700 font-medium">💬 Messages</a>
+        <a href="#admin"           class="block px-3 py-2 rounded-lg text-gray-700 hover:bg-green-50 hover:text-green-700 font-medium">⚙️ Admin</a>
+        <a href="#schema"          class="block px-3 py-2 rounded-lg text-gray-700 hover:bg-green-50 hover:text-green-700 font-medium">🗄️ DB Schema</a>
+      </nav>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="flex-1 min-w-0 space-y-8">
+
+    <!-- QUICK STATS -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div class="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm text-center">
+        <p class="text-3xl font-black text-green-700">30+</p>
+        <p class="text-gray-500 text-xs mt-0.5">API Endpoints</p>
+      </div>
+      <div class="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm text-center">
+        <p class="text-3xl font-black text-blue-600">8</p>
+        <p class="text-gray-500 text-xs mt-0.5">DB Tables</p>
+      </div>
+      <div class="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm text-center">
+        <p class="text-3xl font-black text-purple-600">0</p>
+        <p class="text-gray-500 text-xs mt-0.5">Dependencies</p>
+      </div>
+      <div class="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm text-center">
+        <p class="text-3xl font-black text-orange-600">40/60</p>
+        <p class="text-gray-500 text-xs mt-0.5">Commission Split</p>
+      </div>
+    </div>
+
+    <!-- GETTING STARTED -->
+    <section id="getting-started">
+      <h2 class="text-xl font-black text-gray-900 mb-4 flex items-center gap-2">🚀 Getting Started</h2>
+      <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+        <div class="grid sm:grid-cols-2 gap-4">
+          <div>
+            <p class="font-bold text-gray-900 mb-2">1. Seed the database</p>
+            <pre class="bg-gray-900 text-green-400 rounded-xl p-3 text-sm overflow-x-auto">python3 seed.py</pre>
+          </div>
+          <div>
+            <p class="font-bold text-gray-900 mb-2">2. Start the server</p>
+            <pre class="bg-gray-900 text-green-400 rounded-xl p-3 text-sm overflow-x-auto">python3 server.py</pre>
+          </div>
+          <div>
+            <p class="font-bold text-gray-900 mb-2">3. Test the health endpoint</p>
+            <pre class="bg-gray-900 text-green-400 rounded-xl p-3 text-sm overflow-x-auto">curl http://localhost:8000/health</pre>
+          </div>
+          <div>
+            <p class="font-bold text-gray-900 mb-2">4. Custom port</p>
+            <pre class="bg-gray-900 text-green-400 rounded-xl p-3 text-sm overflow-x-auto">python3 server.py --port 9000</pre>
+          </div>
+        </div>
+        <div class="mt-4 bg-green-50 border border-green-200 rounded-xl p-4">
+          <p class="font-bold text-green-800 mb-2">Default Admin Credentials</p>
+          <div class="flex gap-4 text-sm">
+            <div><span class="text-gray-500">Email:</span> <code>admin@finisiocleans.sc</code></div>
+            <div><span class="text-gray-500">Password:</span> <code>admin123</code></div>
+          </div>
+        </div>
+        <div class="mt-3 bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-700">
+          <strong>Zero dependencies</strong> — runs on plain Python 3.7+ with no pip install required.
+          SQLite database stored in <code>finisio.db</code> next to the scripts.
+        </div>
+      </div>
+    </section>
+
+    <!-- JOB WORKFLOW -->
+    <section id="workflow">
+      <h2 class="text-xl font-black text-gray-900 mb-4 flex items-center gap-2">🔄 Job Status Workflow</h2>
+      <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+        <div class="flex flex-wrap items-center gap-2 text-sm font-semibold">
+          <span class="bg-yellow-100 text-yellow-800 px-3 py-1.5 rounded-full">pending</span>
+          <span class="text-gray-400 font-normal">Admin assigns →</span>
+          <span class="bg-blue-100 text-blue-800 px-3 py-1.5 rounded-full">assigned</span>
+          <span class="text-gray-400 font-normal">Cleaner accepts →</span>
+          <span class="bg-indigo-100 text-indigo-800 px-3 py-1.5 rounded-full">accepted</span>
+          <span class="text-gray-400 font-normal">Cleaner starts →</span>
+          <span class="bg-purple-100 text-purple-800 px-3 py-1.5 rounded-full">in_progress</span>
+          <span class="text-gray-400 font-normal">Cleaner finishes →</span>
+          <span class="bg-green-100 text-green-800 px-3 py-1.5 rounded-full">completed</span>
+          <span class="text-gray-400 font-normal">Admin confirms payment →</span>
+          <span class="bg-emerald-200 text-emerald-900 px-3 py-1.5 rounded-full">paid</span>
+        </div>
+        <div class="mt-3 flex gap-3 text-sm">
+          <span class="bg-red-100 text-red-700 px-3 py-1.5 rounded-full font-semibold">cancelled</span>
+          <span class="text-gray-400">— from any non-completed status</span>
+          <span class="bg-orange-100 text-orange-700 px-3 py-1.5 rounded-full font-semibold">disputed</span>
+          <span class="text-gray-400">— from in_progress or completed</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- USERS -->
+    <section id="users">
+      <h2 class="text-xl font-black text-gray-900 mb-4">👤 Users</h2>
+      <div class="space-y-3">
+
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm endpoint-card overflow-hidden">
+          <details>
+            <summary class="px-5 py-4 flex items-center gap-3 hover:bg-gray-50">
+              <span class="method-post text-xs font-black px-2.5 py-1 rounded-md w-16 text-center">POST</span>
+              <code class="text-sm font-mono text-gray-800 flex-1">/api/users</code>
+              <span class="text-gray-500 text-sm">Create a user (customer / cleaner / admin)</span>
+              <span class="chevron text-gray-400">›</span>
+            </summary>
+            <div class="px-5 pb-5 border-t border-gray-100 pt-4">
+              <div class="grid sm:grid-cols-2 gap-4">
+                <div>
+                  <p class="text-xs font-bold text-gray-500 mb-2 uppercase">Request Body</p>
+                  <pre class="bg-gray-900 text-green-300 rounded-xl p-3 text-xs overflow-x-auto">{
+  "name":     "Sarah Mitchell",   // required
+  "email":    "sarah@email.sc",   // required, unique
+  "role":     "customer",         // required: customer|cleaner|admin
+  "phone":    "+248 254 1234",    // optional
+  "address":  "Mont Fleuri, Mahé",// optional
+  "password": "secret123"         // optional
+}</pre>
+                </div>
+                <div>
+                  <p class="text-xs font-bold text-gray-500 mb-2 uppercase">Response 201</p>
+                  <pre class="bg-gray-900 text-blue-300 rounded-xl p-3 text-xs overflow-x-auto">{
+  "ok": true,
+  "data": {
+    "id": "uuid...",
+    "name": "Sarah Mitchell",
+    "email": "sarah@email.sc",
+    "role": "customer",
+    "verification_status": "unverified",
+    "created_at": "2026-04-21T..."
+  }
+}</pre>
+                </div>
+              </div>
+              <p class="text-xs text-gray-500 mt-3">If <code>role=cleaner</code>, a <code>cleaner_profiles</code> row is automatically created with <code>approved_status=pending</code>.</p>
+            </div>
+          </details>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm endpoint-card overflow-hidden">
+          <details>
+            <summary class="px-5 py-4 flex items-center gap-3 hover:bg-gray-50">
+              <span class="method-get text-xs font-black px-2.5 py-1 rounded-md w-16 text-center">GET</span>
+              <code class="text-sm font-mono text-gray-800 flex-1">/api/users/{user_id}</code>
+              <span class="text-gray-500 text-sm">Get a user by ID</span>
+              <span class="chevron text-gray-400">›</span>
+            </summary>
+            <div class="px-5 pb-5 border-t border-gray-100 pt-4">
+              <p class="text-sm text-gray-600">Returns user object. <code>password_hash</code> is never exposed.</p>
+              <p class="text-sm text-gray-500 mt-1">Query param: <code>?role=customer|cleaner|admin</code> when listing <code>GET /api/users</code></p>
+            </div>
+          </details>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- CLEANERS -->
+    <section id="cleaners">
+      <h2 class="text-xl font-black text-gray-900 mb-4">🧹 Cleaners</h2>
+      <div class="space-y-3">
+
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm endpoint-card overflow-hidden">
+          <details>
+            <summary class="px-5 py-4 flex items-center gap-3 hover:bg-gray-50">
+              <span class="method-post text-xs font-black px-2.5 py-1 rounded-md w-16 text-center">POST</span>
+              <code class="text-sm font-mono text-gray-800 flex-1">/api/cleaners/{user_id}/approve</code>
+              <span class="text-gray-500 text-sm">Admin approves or rejects a cleaner</span>
+              <span class="chevron text-gray-400">›</span>
+            </summary>
+            <div class="px-5 pb-5 border-t border-gray-100 pt-4">
+              <div class="grid sm:grid-cols-2 gap-4">
+                <div>
+                  <p class="text-xs font-bold text-gray-500 mb-2 uppercase">Request Body</p>
+                  <pre class="bg-gray-900 text-green-300 rounded-xl p-3 text-xs overflow-x-auto">{
+  "admin_id": "uuid-of-admin",
+  "approve": true   // false to reject
+}</pre>
+                </div>
+                <div>
+                  <p class="text-xs font-bold text-gray-500 mb-2 uppercase">Side Effects</p>
+                  <ul class="text-sm text-gray-600 space-y-1">
+                    <li>✓ Sets <code>approved_status</code> = approved/rejected</li>
+                    <li>✓ Sets <code>verification_status</code> on user</li>
+                    <li>✓ Records <code>approved_at</code> timestamp</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </details>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm endpoint-card overflow-hidden">
+          <details>
+            <summary class="px-5 py-4 flex items-center gap-3 hover:bg-gray-50">
+              <span class="method-get text-xs font-black px-2.5 py-1 rounded-md w-16 text-center">GET</span>
+              <code class="text-sm font-mono text-gray-800 flex-1">/api/cleaners/{cleaner_id}/jobs</code>
+              <span class="text-gray-500 text-sm">Get all jobs assigned to a cleaner</span>
+              <span class="chevron text-gray-400">›</span>
+            </summary>
+            <div class="px-5 pb-5 border-t border-gray-100 pt-4">
+              <p class="text-sm text-gray-600">Optional filter: <code>?status=assigned|in_progress|completed</code></p>
+              <p class="text-sm text-gray-500 mt-1">Returns array of booking objects sorted by <code>scheduled_date</code>.</p>
+            </div>
+          </details>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm endpoint-card overflow-hidden">
+          <summary class="px-5 py-4 flex items-center gap-3">
+            <span class="method-get text-xs font-black px-2.5 py-1 rounded-md w-16 text-center">GET</span>
+            <code class="text-sm font-mono text-gray-800 flex-1">/api/cleaners</code>
+            <span class="text-gray-500 text-sm">List all approved cleaners. <code>?approved_only=false</code> to include pending.</span>
+          </summary>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- SUBSCRIPTIONS -->
+    <section id="subscriptions">
+      <h2 class="text-xl font-black text-gray-900 mb-4">📋 Subscriptions</h2>
+
+      <!-- Plans table -->
+      <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 mb-3 overflow-x-auto">
+        <p class="font-bold text-gray-900 text-sm mb-3">Available Plans (<code>GET /api/plans</code>)</p>
+        <table class="w-full text-sm">
+          <thead><tr class="text-left text-gray-500 text-xs uppercase">
+            <th class="pb-2 pr-4">Plan ID</th><th class="pb-2 pr-4">Label</th>
+            <th class="pb-2 pr-4">Price (SCR)</th><th class="pb-2 pr-4">Hours/month</th><th class="pb-2">Split allowed</th>
+          </tr></thead>
+          <tbody class="divide-y divide-gray-50">
+            <tr class="py-1"><td class="py-2 pr-4 font-mono">basic</td><td class="pr-4">Basic</td><td class="pr-4 font-bold text-green-700">1,200</td><td class="pr-4">4</td><td>No</td></tr>
+            <tr class="py-1"><td class="py-2 pr-4 font-mono">standard</td><td class="pr-4">Standard</td><td class="pr-4 font-bold text-green-700">1,500</td><td class="pr-4">6</td><td>No</td></tr>
+            <tr class="py-1"><td class="py-2 pr-4 font-mono">premium</td><td class="pr-4">Premium</td><td class="pr-4 font-bold text-green-700">2,000</td><td class="pr-4">10</td><td>Yes ✓</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="space-y-3">
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm endpoint-card overflow-hidden">
+          <details>
+            <summary class="px-5 py-4 flex items-center gap-3 hover:bg-gray-50">
+              <span class="method-post text-xs font-black px-2.5 py-1 rounded-md w-16 text-center">POST</span>
+              <code class="text-sm font-mono text-gray-800 flex-1">/api/subscriptions</code>
+              <span class="text-gray-500 text-sm">Create subscription for a customer</span>
+              <span class="chevron text-gray-400">›</span>
+            </summary>
+            <div class="px-5 pb-5 border-t border-gray-100 pt-4">
+              <div class="grid sm:grid-cols-2 gap-4">
+                <div>
+                  <p class="text-xs font-bold text-gray-500 mb-2 uppercase">Request</p>
+                  <pre class="bg-gray-900 text-green-300 rounded-xl p-3 text-xs overflow-x-auto">{
+  "customer_id": "uuid...",
+  "plan_type":   "standard"  // basic|standard|premium
+}</pre>
+                </div>
+                <div>
+                  <p class="text-xs font-bold text-gray-500 mb-2 uppercase">Notes</p>
+                  <ul class="text-sm text-gray-600 space-y-1">
+                    <li>✓ Auto-cancels any existing active subscription</li>
+                    <li>✓ Sets <code>renewal_date</code> = today + 30 days</li>
+                    <li>✓ Hours reset to 0 on each renewal cycle</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <!-- BOOKINGS -->
+    <section id="bookings">
+      <h2 class="text-xl font-black text-gray-900 mb-4">📅 Bookings</h2>
+      <div class="space-y-3">
+
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm endpoint-card overflow-hidden">
+          <details>
+            <summary class="px-5 py-4 flex items-center gap-3 hover:bg-gray-50">
+              <span class="method-post text-xs font-black px-2.5 py-1 rounded-md w-16 text-center">POST</span>
+              <code class="text-sm font-mono text-gray-800 flex-1">/api/bookings</code>
+              <span class="text-gray-500 text-sm">Create a booking → enters pending queue</span>
+              <span class="chevron text-gray-400">›</span>
+            </summary>
+            <div class="px-5 pb-5 border-t border-gray-100 pt-4">
+              <div class="grid sm:grid-cols-2 gap-4">
+                <div>
+                  <p class="text-xs font-bold text-gray-500 mb-2 uppercase">Request Body</p>
+                  <pre class="bg-gray-900 text-green-300 rounded-xl p-3 text-xs overflow-x-auto">{
+  "customer_id":    "uuid...",         // required
+  "service_type":   "home_deep",       // home_deep | post_construction
+  "booking_type":   "subscription",    // subscription | one_time
+  "scheduled_date": "2026-05-01",      // required (YYYY-MM-DD)
+  "scheduled_time": "09:00",           // optional
+  "address":        "Victoria, Mahé", // optional
+  "notes":          "Focus on kitchen",// optional
+  "media_urls":     ["https://..."],   // optional array
+  "hours_booked":   4,                 // optional, deducted from sub
+  "subscription_id":"uuid..."          // optional, auto-resolved if omitted
+}</pre>
+                </div>
+                <div>
+                  <p class="text-xs font-bold text-gray-500 mb-2 uppercase">Pricing Logic</p>
+                  <div class="text-sm text-gray-600 space-y-2">
+                    <p><span class="font-bold">Subscription booking:</span> SCR 0 charged (covered by monthly plan fee already paid)</p>
+                    <p><span class="font-bold">One-time home deep:</span> SCR 300/hr</p>
+                    <p><span class="font-bold">One-time post-construction:</span> SCR 380/hr</p>
+                    <p class="text-orange-600">Hours are automatically deducted from subscription balance on booking creation.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </details>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm endpoint-card overflow-hidden">
+          <details>
+            <summary class="px-5 py-4 flex items-center gap-3 hover:bg-gray-50">
+              <span class="method-post text-xs font-black px-2.5 py-1 rounded-md w-16 text-center">POST</span>
+              <code class="text-sm font-mono text-gray-800 flex-1">/api/bookings/{id}/assign</code>
+              <span class="text-gray-500 text-sm">Admin assigns a cleaner to a pending booking</span>
+              <span class="chevron text-gray-400">›</span>
+            </summary>
+            <div class="px-5 pb-5 border-t border-gray-100 pt-4">
+              <pre class="bg-gray-900 text-green-300 rounded-xl p-3 text-xs overflow-x-auto">{
+  "cleaner_id": "uuid-of-approved-cleaner",
+  "admin_id":   "uuid-of-admin"
+}</pre>
+              <p class="text-sm text-gray-500 mt-3">Validates: admin role · booking must be <code>pending</code> · cleaner must be <code>approved</code>. Updates status to <code>assigned</code>.</p>
+            </div>
+          </details>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm endpoint-card overflow-hidden">
+          <details>
+            <summary class="px-5 py-4 flex items-center gap-3 hover:bg-gray-50">
+              <span class="method-patch text-xs font-black px-2.5 py-1 rounded-md w-16 text-center">PATCH</span>
+              <code class="text-sm font-mono text-gray-800 flex-1">/api/bookings/{id}/status</code>
+              <span class="text-gray-500 text-sm">Update job status (enforces valid transitions)</span>
+              <span class="chevron text-gray-400">›</span>
+            </summary>
+            <div class="px-5 pb-5 border-t border-gray-100 pt-4">
+              <div class="grid sm:grid-cols-2 gap-4">
+                <div>
+                  <pre class="bg-gray-900 text-green-300 rounded-xl p-3 text-xs overflow-x-auto">{
+  "status":     "in_progress",   // new target status
+  "changed_by": "uuid...",       // user making the change
+  "note":       "Started job"    // optional note
+}</pre>
+                </div>
+                <div class="text-sm text-gray-600">
+                  <p class="font-bold text-gray-900 mb-2">Valid transitions:</p>
+                  <div class="space-y-1 font-mono text-xs">
+                    <div>pending → <span class="text-blue-600">assigned</span> | cancelled</div>
+                    <div>assigned → <span class="text-indigo-600">accepted</span> | cancelled</div>
+                    <div>accepted → <span class="text-purple-600">in_progress</span> | cancelled</div>
+                    <div>in_progress → <span class="text-green-600">completed</span> | disputed</div>
+                    <div>completed → disputed</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </details>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm endpoint-card overflow-hidden">
+          <summary class="px-5 py-4 flex items-center gap-3">
+            <span class="method-get text-xs font-black px-2.5 py-1 rounded-md w-16 text-center">GET</span>
+            <code class="text-sm font-mono text-gray-800 flex-1">/api/customers/{id}/bookings</code>
+            <span class="text-gray-500 text-sm">All bookings for a customer. <code>?status=pending</code> to filter.</span>
+          </summary>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm endpoint-card overflow-hidden">
+          <summary class="px-5 py-4 flex items-center gap-3">
+            <span class="method-get text-xs font-black px-2.5 py-1 rounded-md w-16 text-center">GET</span>
+            <code class="text-sm font-mono text-gray-800 flex-1">/api/bookings/{id}/history</code>
+            <span class="text-gray-500 text-sm">Full status change audit log for a booking</span>
+          </summary>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- PAYMENTS -->
+    <section id="payments">
+      <h2 class="text-xl font-black text-gray-900 mb-4">💳 Payments</h2>
+      <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4 text-sm text-blue-700">
+        <strong>Manual MVP Payment Model:</strong> Customers pay via bank transfer or cash. Admin receives proof and manually confirms. System auto-calculates 40/60 commission split on confirmation.
+      </div>
+      <div class="space-y-3">
+
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm endpoint-card overflow-hidden">
+          <details>
+            <summary class="px-5 py-4 flex items-center gap-3 hover:bg-gray-50">
+              <span class="method-post text-xs font-black px-2.5 py-1 rounded-md w-16 text-center">POST</span>
+              <code class="text-sm font-mono text-gray-800 flex-1">/api/payments</code>
+              <span class="text-gray-500 text-sm">Record a payment (status=pending)</span>
+              <span class="chevron text-gray-400">›</span>
+            </summary>
+            <div class="px-5 pb-5 border-t border-gray-100 pt-4">
+              <pre class="bg-gray-900 text-green-300 rounded-xl p-3 text-xs overflow-x-auto">{
+  "booking_id":     "uuid...",
+  "customer_id":    "uuid...",
+  "amount_scr":     1500,
+  "payment_method": "bank_transfer",  // bank_transfer | manual | cash
+  "reference_no":   "REF-SC-0421"    // optional bank reference
+}</pre>
+            </div>
+          </details>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm endpoint-card overflow-hidden">
+          <details>
+            <summary class="px-5 py-4 flex items-center gap-3 hover:bg-gray-50">
+              <span class="method-post text-xs font-black px-2.5 py-1 rounded-md w-16 text-center">POST</span>
+              <code class="text-sm font-mono text-gray-800 flex-1">/api/payments/{id}/confirm</code>
+              <span class="text-gray-500 text-sm">Admin confirms payment → auto-calculates commission</span>
+              <span class="chevron text-gray-400">›</span>
+            </summary>
+            <div class="px-5 pb-5 border-t border-gray-100 pt-4">
+              <div class="grid sm:grid-cols-2 gap-4">
+                <div>
+                  <pre class="bg-gray-900 text-green-300 rounded-xl p-3 text-xs overflow-x-auto">{
+  "admin_id":    "uuid...",
+  "reference_no":"REF-SC-0421"  // optional
+}</pre>
+                </div>
+                <div class="text-sm text-gray-600 space-y-1">
+                  <p>✓ Sets payment <code>status=confirmed</code></p>
+                  <p>✓ Records <code>confirmed_by</code> and <code>confirmed_at</code></p>
+                  <p>✓ <strong>Auto-creates commission record</strong></p>
+                  <p>✓ Returns <code>{"payment":..., "commission":...}</code></p>
+                </div>
+              </div>
+            </div>
+          </details>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- COMMISSION -->
+    <section id="commission">
+      <h2 class="text-xl font-black text-gray-900 mb-4">📊 Commission</h2>
+      <div class="bg-green-50 border border-green-200 rounded-xl p-4 mb-4">
+        <div class="grid grid-cols-3 gap-4 text-center">
+          <div><p class="text-2xl font-black text-green-800">40%</p><p class="text-green-600 text-sm">Platform share</p></div>
+          <div class="flex items-center justify-center text-green-400 font-black text-2xl">+</div>
+          <div><p class="text-2xl font-black text-blue-700">60%</p><p class="text-blue-600 text-sm">Cleaner payout</p></div>
+        </div>
+      </div>
+      <div class="space-y-3">
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm endpoint-card overflow-hidden">
+          <summary class="px-5 py-4 flex items-center gap-3">
+            <span class="method-post text-xs font-black px-2.5 py-1 rounded-md w-16 text-center">POST</span>
+            <code class="text-sm font-mono text-gray-800 flex-1">/api/commission/calculate</code>
+            <span class="text-gray-500 text-sm">Calculate 40/60 split for a booking. Body: <code>{"booking_id":"..."}</code></span>
+          </summary>
+        </div>
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm endpoint-card overflow-hidden">
+          <summary class="px-5 py-4 flex items-center gap-3">
+            <span class="method-get text-xs font-black px-2.5 py-1 rounded-md w-16 text-center">GET</span>
+            <code class="text-sm font-mono text-gray-800 flex-1">/api/commission/summary</code>
+            <span class="text-gray-500 text-sm">Total platform revenue, payouts, pending vs settled</span>
+          </summary>
+        </div>
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm endpoint-card overflow-hidden">
+          <summary class="px-5 py-4 flex items-center gap-3">
+            <span class="method-post text-xs font-black px-2.5 py-1 rounded-md w-16 text-center">POST</span>
+            <code class="text-sm font-mono text-gray-800 flex-1">/api/commission/{booking_id}/settle</code>
+            <span class="text-gray-500 text-sm">Mark commission as settled (cleaner paid out)</span>
+          </summary>
+        </div>
+      </div>
+    </section>
+
+    <!-- REVIEWS -->
+    <section id="reviews">
+      <h2 class="text-xl font-black text-gray-900 mb-4">⭐ Reviews</h2>
+      <div class="space-y-3">
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm endpoint-card overflow-hidden">
+          <details>
+            <summary class="px-5 py-4 flex items-center gap-3 hover:bg-gray-50">
+              <span class="method-post text-xs font-black px-2.5 py-1 rounded-md w-16 text-center">POST</span>
+              <code class="text-sm font-mono text-gray-800 flex-1">/api/reviews</code>
+              <span class="text-gray-500 text-sm">Customer submits review for a completed job</span>
+              <span class="chevron text-gray-400">›</span>
+            </summary>
+            <div class="px-5 pb-5 border-t border-gray-100 pt-4">
+              <pre class="bg-gray-900 text-green-300 rounded-xl p-3 text-xs overflow-x-auto">{
+  "booking_id":  "uuid...",        // must be completed
+  "customer_id": "uuid...",        // must be the booking customer
+  "rating":      5,                // integer 1–5
+  "comment":     "Excellent work!" // optional
+}</pre>
+              <p class="text-xs text-gray-500 mt-2">Automatically recalculates cleaner's average rating after submission.</p>
+            </div>
+          </details>
+        </div>
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm endpoint-card overflow-hidden">
+          <summary class="px-5 py-4 flex items-center gap-3">
+            <span class="method-get text-xs font-black px-2.5 py-1 rounded-md w-16 text-center">GET</span>
+            <code class="text-sm font-mono text-gray-800 flex-1">/api/reviews/cleaner/{cleaner_id}</code>
+            <span class="text-gray-500 text-sm">All reviews for a cleaner</span>
+          </summary>
+        </div>
+      </div>
+    </section>
+
+    <!-- MESSAGES -->
+    <section id="messages">
+      <h2 class="text-xl font-black text-gray-900 mb-4">💬 Messages</h2>
+      <div class="space-y-3">
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm endpoint-card overflow-hidden">
+          <details>
+            <summary class="px-5 py-4 flex items-center gap-3 hover:bg-gray-50">
+              <span class="method-post text-xs font-black px-2.5 py-1 rounded-md w-16 text-center">POST</span>
+              <code class="text-sm font-mono text-gray-800 flex-1">/api/messages</code>
+              <span class="text-gray-500 text-sm">Send a message</span>
+              <span class="chevron text-gray-400">›</span>
+            </summary>
+            <div class="px-5 pb-5 border-t border-gray-100 pt-4">
+              <pre class="bg-gray-900 text-green-300 rounded-xl p-3 text-xs overflow-x-auto">{
+  "sender_id":   "uuid...",
+  "receiver_id": "uuid...",
+  "message_text":"Hi, I'll arrive at 9am!",
+  "booking_id":  "uuid..."    // optional, links message to a booking
+}</pre>
+            </div>
+          </details>
+        </div>
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm endpoint-card overflow-hidden">
+          <summary class="px-5 py-4 flex items-center gap-3">
+            <span class="method-get text-xs font-black px-2.5 py-1 rounded-md w-16 text-center">GET</span>
+            <code class="text-sm font-mono text-gray-800 flex-1">/api/messages?user_a={id}&user_b={id}</code>
+            <span class="text-gray-500 text-sm">Get conversation. Add <code>&booking_id=</code> to filter by booking.</span>
+          </summary>
+        </div>
+      </div>
+    </section>
+
+    <!-- ADMIN -->
+    <section id="admin">
+      <h2 class="text-xl font-black text-gray-900 mb-4">⚙️ Admin</h2>
+      <div class="space-y-3">
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm endpoint-card overflow-hidden">
+          <details>
+            <summary class="px-5 py-4 flex items-center gap-3 hover:bg-gray-50">
+              <span class="method-get text-xs font-black px-2.5 py-1 rounded-md w-16 text-center">GET</span>
+              <code class="text-sm font-mono text-gray-800 flex-1">/api/admin/analytics</code>
+              <span class="text-gray-500 text-sm">Full platform analytics snapshot</span>
+              <span class="chevron text-gray-400">›</span>
+            </summary>
+            <div class="px-5 pb-5 border-t border-gray-100 pt-4">
+              <pre class="bg-gray-900 text-blue-300 rounded-xl p-3 text-xs overflow-x-auto">{
+  "ok": true,
+  "data": {
+    "bookings":      { "total":148, "pending":12, "assigned":34, "completed":89, ... },
+    "users":         { "total":280, "customers":200, "cleaners":78, "admins":2 },
+    "subscriptions": { "total_active":64, "basic":29, "standard":45, "premium":26,
+                       "monthly_subscription_revenue": 96000 },
+    "revenue":       { "total_revenue":240000, "total_platform":96000,
+                       "total_cleaner_payouts":144000, "settled_count":82 }
+  }
+}</pre>
+            </div>
+          </details>
+        </div>
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm endpoint-card overflow-hidden">
+          <summary class="px-5 py-4 flex items-center gap-3">
+            <span class="method-post text-xs font-black px-2.5 py-1 rounded-md w-16 text-center">POST</span>
+            <code class="text-sm font-mono text-gray-800 flex-1">/api/disputes</code>
+            <span class="text-gray-500 text-sm">Raise a dispute. Body: <code>{"booking_id","raised_by","description"}</code></span>
+          </summary>
+        </div>
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm endpoint-card overflow-hidden">
+          <summary class="px-5 py-4 flex items-center gap-3">
+            <span class="method-post text-xs font-black px-2.5 py-1 rounded-md w-16 text-center">POST</span>
+            <code class="text-sm font-mono text-gray-800 flex-1">/api/disputes/{id}/resolve</code>
+            <span class="text-gray-500 text-sm">Admin resolves dispute. Body: <code>{"admin_id","resolution":"..."}</code></span>
+          </summary>
+        </div>
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm endpoint-card overflow-hidden">
+          <summary class="px-5 py-4 flex items-center gap-3">
+            <span class="method-post text-xs font-black px-2.5 py-1 rounded-md w-16 text-center">POST</span>
+            <code class="text-sm font-mono text-gray-800 flex-1">/api/subscriptions/renew</code>
+            <span class="text-gray-500 text-sm">Auto-renew expired subscriptions (reset hours, extend date)</span>
+          </summary>
+        </div>
+      </div>
+    </section>
+
+    <!-- DB SCHEMA -->
+    <section id="schema">
+      <h2 class="text-xl font-black text-gray-900 mb-4">🗄️ Database Schema</h2>
+      <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 overflow-x-auto">
+        <div class="grid sm:grid-cols-2 gap-6 text-sm">
+          <div>
+            <p class="font-black text-gray-900 mb-2 flex items-center gap-2"><span class="w-2 h-2 bg-green-500 rounded-full"></span>users</p>
+            <pre class="bg-gray-50 rounded-xl p-3 text-xs text-gray-700">id, name, email, role
+phone, address, password_hash
+verification_status, created_at</pre>
+          </div>
+          <div>
+            <p class="font-black text-gray-900 mb-2 flex items-center gap-2"><span class="w-2 h-2 bg-green-500 rounded-full"></span>cleaner_profiles</p>
+            <pre class="bg-gray-50 rounded-xl p-3 text-xs text-gray-700">user_id (FK), approved_status
+service_areas (JSON), skills (JSON)
+rating, total_jobs_completed
+experience_years, id_document_url
+approved_at, created_at</pre>
+          </div>
+          <div>
+            <p class="font-black text-gray-900 mb-2 flex items-center gap-2"><span class="w-2 h-2 bg-blue-500 rounded-full"></span>subscriptions</p>
+            <pre class="bg-gray-50 rounded-xl p-3 text-xs text-gray-700">id, customer_id (FK)
+plan_type, price_scr
+hours_allocated, hours_used
+status, renewal_date</pre>
+          </div>
+          <div>
+            <p class="font-black text-gray-900 mb-2 flex items-center gap-2"><span class="w-2 h-2 bg-purple-500 rounded-full"></span>bookings</p>
+            <pre class="bg-gray-50 rounded-xl p-3 text-xs text-gray-700">id, customer_id, cleaner_id (FK)
+subscription_id (FK)
+service_type, booking_type, status
+scheduled_date, scheduled_time
+address, notes, media_urls (JSON)
+hours_booked, amount_scr
+created_at, updated_at</pre>
+          </div>
+          <div>
+            <p class="font-black text-gray-900 mb-2 flex items-center gap-2"><span class="w-2 h-2 bg-yellow-500 rounded-full"></span>payments</p>
+            <pre class="bg-gray-50 rounded-xl p-3 text-xs text-gray-700">id, booking_id (FK), customer_id (FK)
+amount_scr, payment_method
+status, reference_no
+confirmed_by, confirmed_at</pre>
+          </div>
+          <div>
+            <p class="font-black text-gray-900 mb-2 flex items-center gap-2"><span class="w-2 h-2 bg-orange-500 rounded-full"></span>commissions</p>
+            <pre class="bg-gray-50 rounded-xl p-3 text-xs text-gray-700">id, booking_id, payment_id
+total_amount
+platform_pct (40), cleaner_pct (60)
+platform_share, cleaner_share
+status (pending|settled), settled_at</pre>
+          </div>
+          <div>
+            <p class="font-black text-gray-900 mb-2 flex items-center gap-2"><span class="w-2 h-2 bg-red-400 rounded-full"></span>reviews</p>
+            <pre class="bg-gray-50 rounded-xl p-3 text-xs text-gray-700">id, booking_id (unique), customer_id
+cleaner_id, rating (1-5), comment</pre>
+          </div>
+          <div>
+            <p class="font-black text-gray-900 mb-2 flex items-center gap-2"><span class="w-2 h-2 bg-indigo-400 rounded-full"></span>messages</p>
+            <pre class="bg-gray-50 rounded-xl p-3 text-xs text-gray-700">id, sender_id, receiver_id
+booking_id (optional), message_text
+is_read, sent_at</pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FULL ENDPOINT REFERENCE -->
+    <section>
+      <h2 class="text-xl font-black text-gray-900 mb-4">📋 Full Endpoint Reference</h2>
+      <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+        <table class="w-full text-sm">
+          <thead class="bg-gray-50 border-b border-gray-100">
+            <tr class="text-left text-xs font-bold text-gray-500 uppercase">
+              <th class="px-4 py-3">Method</th>
+              <th class="px-4 py-3">Path</th>
+              <th class="px-4 py-3">Description</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-50">
+            <tr><td class="px-4 py-2.5"><span class="method-post text-xs font-black px-2 py-0.5 rounded">POST</span></td><td class="px-4 py-2.5 font-mono text-xs">/api/users</td><td class="px-4 py-2.5 text-gray-600">Create user</td></tr>
+            <tr><td class="px-4 py-2.5"><span class="method-get text-xs font-black px-2 py-0.5 rounded">GET</span></td><td class="px-4 py-2.5 font-mono text-xs">/api/users</td><td class="px-4 py-2.5 text-gray-600">List users (filter by ?role=)</td></tr>
+            <tr><td class="px-4 py-2.5"><span class="method-get text-xs font-black px-2 py-0.5 rounded">GET</span></td><td class="px-4 py-2.5 font-mono text-xs">/api/users/{id}</td><td class="px-4 py-2.5 text-gray-600">Get user</td></tr>
+            <tr><td class="px-4 py-2.5"><span class="method-patch text-xs font-black px-2 py-0.5 rounded">PATCH</span></td><td class="px-4 py-2.5 font-mono text-xs">/api/users/{id}</td><td class="px-4 py-2.5 text-gray-600">Update user</td></tr>
+            <tr class="bg-gray-50/50"><td class="px-4 py-2.5"><span class="method-get text-xs font-black px-2 py-0.5 rounded">GET</span></td><td class="px-4 py-2.5 font-mono text-xs">/api/cleaners</td><td class="px-4 py-2.5 text-gray-600">List cleaners</td></tr>
+            <tr class="bg-gray-50/50"><td class="px-4 py-2.5"><span class="method-get text-xs font-black px-2 py-0.5 rounded">GET</span></td><td class="px-4 py-2.5 font-mono text-xs">/api/cleaners/{id}</td><td class="px-4 py-2.5 text-gray-600">Get cleaner profile</td></tr>
+            <tr class="bg-gray-50/50"><td class="px-4 py-2.5"><span class="method-patch text-xs font-black px-2 py-0.5 rounded">PATCH</span></td><td class="px-4 py-2.5 font-mono text-xs">/api/cleaners/{id}</td><td class="px-4 py-2.5 text-gray-600">Update cleaner profile</td></tr>
+            <tr class="bg-gray-50/50"><td class="px-4 py-2.5"><span class="method-post text-xs font-black px-2 py-0.5 rounded">POST</span></td><td class="px-4 py-2.5 font-mono text-xs">/api/cleaners/{id}/approve</td><td class="px-4 py-2.5 text-gray-600">Approve/reject cleaner</td></tr>
+            <tr class="bg-gray-50/50"><td class="px-4 py-2.5"><span class="method-get text-xs font-black px-2 py-0.5 rounded">GET</span></td><td class="px-4 py-2.5 font-mono text-xs">/api/cleaners/{id}/jobs</td><td class="px-4 py-2.5 text-gray-600">Get cleaner's jobs</td></tr>
+            <tr><td class="px-4 py-2.5"><span class="method-post text-xs font-black px-2 py-0.5 rounded">POST</span></td><td class="px-4 py-2.5 font-mono text-xs">/api/subscriptions</td><td class="px-4 py-2.5 text-gray-600">Create subscription</td></tr>
+            <tr><td class="px-4 py-2.5"><span class="method-get text-xs font-black px-2 py-0.5 rounded">GET</span></td><td class="px-4 py-2.5 font-mono text-xs">/api/subscriptions/{id}</td><td class="px-4 py-2.5 text-gray-600">Get subscription</td></tr>
+            <tr><td class="px-4 py-2.5"><span class="method-get text-xs font-black px-2 py-0.5 rounded">GET</span></td><td class="px-4 py-2.5 font-mono text-xs">/api/customers/{id}/subscription</td><td class="px-4 py-2.5 text-gray-600">Active subscription for customer</td></tr>
+            <tr><td class="px-4 py-2.5"><span class="method-post text-xs font-black px-2 py-0.5 rounded">POST</span></td><td class="px-4 py-2.5 font-mono text-xs">/api/subscriptions/renew</td><td class="px-4 py-2.5 text-gray-600">Auto-renew expired subscriptions</td></tr>
+            <tr class="bg-gray-50/50"><td class="px-4 py-2.5"><span class="method-post text-xs font-black px-2 py-0.5 rounded">POST</span></td><td class="px-4 py-2.5 font-mono text-xs">/api/bookings</td><td class="px-4 py-2.5 text-gray-600">Create booking</td></tr>
+            <tr class="bg-gray-50/50"><td class="px-4 py-2.5"><span class="method-get text-xs font-black px-2 py-0.5 rounded">GET</span></td><td class="px-4 py-2.5 font-mono text-xs">/api/bookings</td><td class="px-4 py-2.5 text-gray-600">List all bookings (admin)</td></tr>
+            <tr class="bg-gray-50/50"><td class="px-4 py-2.5"><span class="method-get text-xs font-black px-2 py-0.5 rounded">GET</span></td><td class="px-4 py-2.5 font-mono text-xs">/api/bookings/{id}</td><td class="px-4 py-2.5 text-gray-600">Get booking</td></tr>
+            <tr class="bg-gray-50/50"><td class="px-4 py-2.5"><span class="method-post text-xs font-black px-2 py-0.5 rounded">POST</span></td><td class="px-4 py-2.5 font-mono text-xs">/api/bookings/{id}/assign</td><td class="px-4 py-2.5 text-gray-600">Assign cleaner (admin only)</td></tr>
+            <tr class="bg-gray-50/50"><td class="px-4 py-2.5"><span class="method-patch text-xs font-black px-2 py-0.5 rounded">PATCH</span></td><td class="px-4 py-2.5 font-mono text-xs">/api/bookings/{id}/status</td><td class="px-4 py-2.5 text-gray-600">Update job status</td></tr>
+            <tr class="bg-gray-50/50"><td class="px-4 py-2.5"><span class="method-get text-xs font-black px-2 py-0.5 rounded">GET</span></td><td class="px-4 py-2.5 font-mono text-xs">/api/bookings/{id}/history</td><td class="px-4 py-2.5 text-gray-600">Status change audit log</td></tr>
+            <tr class="bg-gray-50/50"><td class="px-4 py-2.5"><span class="method-get text-xs font-black px-2 py-0.5 rounded">GET</span></td><td class="px-4 py-2.5 font-mono text-xs">/api/customers/{id}/bookings</td><td class="px-4 py-2.5 text-gray-600">Customer's bookings</td></tr>
+            <tr><td class="px-4 py-2.5"><span class="method-post text-xs font-black px-2 py-0.5 rounded">POST</span></td><td class="px-4 py-2.5 font-mono text-xs">/api/payments</td><td class="px-4 py-2.5 text-gray-600">Record payment</td></tr>
+            <tr><td class="px-4 py-2.5"><span class="method-get text-xs font-black px-2 py-0.5 rounded">GET</span></td><td class="px-4 py-2.5 font-mono text-xs">/api/payments</td><td class="px-4 py-2.5 text-gray-600">List payments</td></tr>
+            <tr><td class="px-4 py-2.5"><span class="method-post text-xs font-black px-2 py-0.5 rounded">POST</span></td><td class="px-4 py-2.5 font-mono text-xs">/api/payments/{id}/confirm</td><td class="px-4 py-2.5 text-gray-600">Admin confirms payment + auto-commission</td></tr>
+            <tr><td class="px-4 py-2.5"><span class="method-post text-xs font-black px-2 py-0.5 rounded">POST</span></td><td class="px-4 py-2.5 font-mono text-xs">/api/payments/{id}/reject</td><td class="px-4 py-2.5 text-gray-600">Admin rejects payment</td></tr>
+            <tr class="bg-gray-50/50"><td class="px-4 py-2.5"><span class="method-post text-xs font-black px-2 py-0.5 rounded">POST</span></td><td class="px-4 py-2.5 font-mono text-xs">/api/commission/calculate</td><td class="px-4 py-2.5 text-gray-600">Calculate commission split</td></tr>
+            <tr class="bg-gray-50/50"><td class="px-4 py-2.5"><span class="method-get text-xs font-black px-2 py-0.5 rounded">GET</span></td><td class="px-4 py-2.5 font-mono text-xs">/api/commission</td><td class="px-4 py-2.5 text-gray-600">List all commissions</td></tr>
+            <tr class="bg-gray-50/50"><td class="px-4 py-2.5"><span class="method-get text-xs font-black px-2 py-0.5 rounded">GET</span></td><td class="px-4 py-2.5 font-mono text-xs">/api/commission/summary</td><td class="px-4 py-2.5 text-gray-600">Revenue summary</td></tr>
+            <tr class="bg-gray-50/50"><td class="px-4 py-2.5"><span class="method-post text-xs font-black px-2 py-0.5 rounded">POST</span></td><td class="px-4 py-2.5 font-mono text-xs">/api/commission/{id}/settle</td><td class="px-4 py-2.5 text-gray-600">Mark commission settled</td></tr>
+            <tr><td class="px-4 py-2.5"><span class="method-post text-xs font-black px-2 py-0.5 rounded">POST</span></td><td class="px-4 py-2.5 font-mono text-xs">/api/reviews</td><td class="px-4 py-2.5 text-gray-600">Submit review</td></tr>
+            <tr><td class="px-4 py-2.5"><span class="method-get text-xs font-black px-2 py-0.5 rounded">GET</span></td><td class="px-4 py-2.5 font-mono text-xs">/api/reviews/cleaner/{id}</td><td class="px-4 py-2.5 text-gray-600">Cleaner reviews</td></tr>
+            <tr class="bg-gray-50/50"><td class="px-4 py-2.5"><span class="method-post text-xs font-black px-2 py-0.5 rounded">POST</span></td><td class="px-4 py-2.5 font-mono text-xs">/api/messages</td><td class="px-4 py-2.5 text-gray-600">Send message</td></tr>
+            <tr class="bg-gray-50/50"><td class="px-4 py-2.5"><span class="method-get text-xs font-black px-2 py-0.5 rounded">GET</span></td><td class="px-4 py-2.5 font-mono text-xs">/api/messages?user_a=&user_b=</td><td class="px-4 py-2.5 text-gray-600">Get conversation</td></tr>
+            <tr><td class="px-4 py-2.5"><span class="method-get text-xs font-black px-2 py-0.5 rounded">GET</span></td><td class="px-4 py-2.5 font-mono text-xs">/api/admin/analytics</td><td class="px-4 py-2.5 text-gray-600">Platform analytics</td></tr>
+            <tr><td class="px-4 py-2.5"><span class="method-post text-xs font-black px-2 py-0.5 rounded">POST</span></td><td class="px-4 py-2.5 font-mono text-xs">/api/disputes</td><td class="px-4 py-2.5 text-gray-600">Raise dispute</td></tr>
+            <tr><td class="px-4 py-2.5"><span class="method-post text-xs font-black px-2 py-0.5 rounded">POST</span></td><td class="px-4 py-2.5 font-mono text-xs">/api/disputes/{id}/resolve</td><td class="px-4 py-2.5 text-gray-600">Resolve dispute</td></tr>
+            <tr><td class="px-4 py-2.5"><span class="method-get text-xs font-black px-2 py-0.5 rounded">GET</span></td><td class="px-4 py-2.5 font-mono text-xs">/api/plans</td><td class="px-4 py-2.5 text-gray-600">List subscription plans</td></tr>
+            <tr><td class="px-4 py-2.5"><span class="method-get text-xs font-black px-2 py-0.5 rounded">GET</span></td><td class="px-4 py-2.5 font-mono text-xs">/health</td><td class="px-4 py-2.5 text-gray-600">Health check</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<footer class="bg-green-900 text-white mt-12 py-6">
+  <div class="max-w-6xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-3">
+    <div class="flex items-center gap-3">
+      <div class="w-9 h-9 rounded-xl flex items-center justify-center" style="background:#1a5c32;">
+        <svg width="20" height="24" viewBox="0 0 38 44" fill="none">
+          <path d="M28 6 C28 3, 25 1, 19 1 C10 1, 5 5, 5 12 C5 18, 9 21, 16 22 C23 23, 33 25, 33 33 C33 40, 27 43, 19 43 C11 43, 8 40, 8 37" stroke="white" stroke-width="5.5" stroke-linecap="round" fill="none"/>
+          <line x1="28" y1="5" x2="10" y2="38" stroke="white" stroke-width="5.5" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div>
+        <p class="font-black text-sm">FINISIO CLEANS</p>
+        <p class="text-green-400 text-xs">Backend API v1.0.0 · Seychelles</p>
+      </div>
+    </div>
+    <p class="text-green-400 text-xs text-center">Python stdlib · SQLite · Zero dependencies · Manual Payment MVP</p>
+  </div>
+</footer>
+
+</body>
+</html>
