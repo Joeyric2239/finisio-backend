@@ -6,7 +6,7 @@ PostgreSQL with SQLite fallback for local dev.
 import os
 import json
 
-DATABASE_URL = os.environ.get("DATABASE_URL")
+DATABASE_URL = os.environ.get("DATABASE_URL", "postgresql://postgres:AozyemgfTfAtXVKCQblWpKIusCTNEQbl@shortline.proxy.rlwy.net:33486/railway")
 
 if DATABASE_URL:
     import psycopg2
