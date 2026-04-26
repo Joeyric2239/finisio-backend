@@ -420,8 +420,8 @@ def assign_cleaner(booking_id, cleaner_id, admin_id):
     booking = get_booking(booking_id)
     if not booking:
         raise ValueError("Booking not found")
-    if booking["status"] != "pending":
-        raise ValueError(f"Can only assign cleaner to pending bookings. Current: {booking['status']}")
+    if booking["status"] == "completed":
+        raise ValueError(f"Cannot reassign a completed booking. Current: {booking['status']}")
 
     # Verify cleaner is approved
     cleaner = db.fetchone(
