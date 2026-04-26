@@ -5,7 +5,7 @@ Pure Python stdlib HTTP server. Zero external dependencies.
 Run:  python3 server.py
       python3 server.py --port 9000
 """
-
+import os
 import json
 import re
 import sys
@@ -13,7 +13,6 @@ import traceback
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from urllib.parse import urlparse, parse_qs
 
-import os
 import db
 import logic
 
