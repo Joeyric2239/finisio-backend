@@ -42,8 +42,6 @@ def forbidden():
 #  ROUTER  (pattern -> handler map)
 # ---------------------------------------------------------
 
-# Each entry: (METHOD, regex_pattern, handler_fn)
-# Named groups in the pattern become kwargs to the handler
 ROUTES = []
 
 def route(method, pattern):
@@ -138,11 +136,11 @@ def get_cleaner(body, params, user_id, **_):
 def update_cleaner(body, params, user_id, **_):
     try:
         profile = logic.update_cleaner_profile(
-            user_id         = user_id,
-            service_areas   = body.get("service_areas"),
-            skills          = body.get("skills"),
-            experience_years= body.get("experience_years"),
-            id_document_url = body.get("id_document_url"),
+            user_id          = user_id,
+            service_areas    = body.get("service_areas"),
+            skills           = body.get("skills"),
+            experience_years = body.get("experience_years"),
+            id_document_url  = body.get("id_document_url"),
         )
         return ok(profile)
     except ValueError as e:
@@ -151,9 +149,6 @@ def update_cleaner(body, params, user_id, **_):
 
 @route("POST", r"/api/cleaners/(?P<user_id>[^/]+)/approve")
 def approve_cleaner(body, params, user_id, **_):
-    """
-    Body: { "admin_id": "...", "approve": true|false }
-    """
     admin_id = body.get("admin_id")
     approve  = body.get("approve", True)
     if not admin_id:
@@ -176,9 +171,6 @@ def get_cleaner_jobs(body, params, cleaner_id, **_):
 
 @route("POST", r"/api/subscriptions")
 def create_subscription(body, params, **_):
-    """
-    Body: { "customer_id": "...", "plan_type": "basic|standard|premium" }
-    """
     required = ["customer_id", "plan_type"]
     for f in required:
         if f not in body:
@@ -216,29 +208,22 @@ def renew_subscriptions(body, params, **_):
 
 @route("POST", r"/api/bookings")
 def create_booking(body, params, **_):
-    """
-    Body: {
-      customer_id, service_type, booking_type, scheduled_date,
-      scheduled_time?, address?, notes?, media_urls?, hours_booked?,
-      subscription_id?
-    }
-    """
     required = ["customer_id", "service_type", "booking_type", "scheduled_date"]
     for f in required:
         if f not in body:
             return err(f"Missing field: {f}")
     try:
         booking = logic.create_booking(**{
-            "customer_id":      body["customer_id"],
-            "service_type":     body["service_type"],
-            "booking_type":     body["booking_type"],
-            "scheduled_date":   body["scheduled_date"],
-            "scheduled_time":   body.get("scheduled_time"),
-            "address":          body.get("address"),
-            "notes":            body.get("notes"),
-            "media_urls":       body.get("media_urls"),
-            "hours_booked":     body.get("hours_booked"),
-            "subscription_id":  body.get("subscription_id"),
+            "customer_id":     body["customer_id"],
+            "service_type":    body["service_type"],
+            "booking_type":    body["booking_type"],
+            "scheduled_date":  body["scheduled_date"],
+            "scheduled_time":  body.get("scheduled_time"),
+            "address":         body.get("address"),
+            "notes":           body.get("notes"),
+            "media_urls":      body.get("media_urls"),
+            "hours_booked":    body.get("hours_booked"),
+            "subscription_id": body.get("subscription_id"),
         })
         return created(booking)
     except ValueError as e:
@@ -269,9 +254,6 @@ def get_booking_history(body, params, booking_id, **_):
 
 @route("POST", r"/api/bookings/(?P<booking_id>[^/]+)/assign")
 def assign_cleaner(body, params, booking_id, **_):
-    """
-    Body: { "cleaner_id": "...", "admin_id": "..." }
-    """
     cleaner_id = body.get("cleaner_id")
     admin_id   = body.get("admin_id")
     if not cleaner_id or not admin_id:
@@ -285,17 +267,9 @@ def assign_cleaner(body, params, booking_id, **_):
 
 @route("PATCH", r"/api/bookings/(?P<booking_id>[^/]+)/status")
 def update_job_status(body, params, booking_id, **_):
-    """
-    Body: { "status": "...", "changed_by": "user_id", "note": "..." }
-
-    Valid workflow:
-    pending -> assigned -> accepted -> in_progress -> completed
-    Any -> cancelled (except completed)
-    Any -> disputed (except cancelled)
-    """
-    new_status   = body.get("status")
-    changed_by   = body.get("changed_by")
-    note         = body.get("note")
+    new_status = body.get("status")
+    changed_by = body.get("changed_by")
+    note       = body.get("note")
     if not new_status or not changed_by:
         return err("status and changed_by are required")
     try:
@@ -315,9 +289,6 @@ def get_customer_bookings(body, params, customer_id, **_):
 
 @route("POST", r"/api/payments")
 def create_payment(body, params, **_):
-    """
-    Body: { booking_id, customer_id, amount_scr, payment_method?, reference_no? }
-    """
     required = ["booking_id", "customer_id", "amount_scr"]
     for f in required:
         if f not in body:
@@ -351,11 +322,8 @@ def get_payment(body, params, payment_id, **_):
 
 @route("POST", r"/api/payments/(?P<payment_id>[^/]+)/confirm")
 def confirm_payment(body, params, payment_id, **_):
-    """
-    Body: { "admin_id": "...", "reference_no"?: "..." }
-    """
-    admin_id    = body.get("admin_id")
-    reference_no= body.get("reference_no")
+    admin_id     = body.get("admin_id")
+    reference_no = body.get("reference_no")
     if not admin_id:
         return err("admin_id is required")
     try:
@@ -380,10 +348,6 @@ def reject_payment(body, params, payment_id, **_):
 
 @route("POST", r"/api/commission/calculate")
 def calculate_commission(body, params, **_):
-    """
-    Body: { "booking_id": "...", "payment_id"?: "..." }
-    Calculates 40% platform / 60% cleaner split.
-    """
     booking_id = body.get("booking_id")
     if not booking_id:
         return err("booking_id is required")
@@ -420,9 +384,6 @@ def settle_commission(body, params, booking_id, **_):
 
 @route("POST", r"/api/reviews")
 def submit_review(body, params, **_):
-    """
-    Body: { "booking_id": "...", "customer_id": "...", "rating": 1-5, "comment"?: "..." }
-    """
     required = ["booking_id", "customer_id", "rating"]
     for f in required:
         if f not in body:
@@ -470,8 +431,8 @@ def send_message(body, params, **_):
 
 @route("GET", r"/api/messages")
 def get_messages(body, params, **_):
-    user_a = params.get("user_a", [None])[0]
-    user_b = params.get("user_b", [None])[0]
+    user_a     = params.get("user_a", [None])[0]
+    user_b     = params.get("user_b", [None])[0]
     booking_id = params.get("booking_id", [None])[0]
     if not user_a or not user_b:
         return err("user_a and user_b query params required")
@@ -522,14 +483,106 @@ def get_analytics(body, params, **_):
     return ok(logic.get_analytics())
 
 
-# -- SUBSCRIPTION PLANS (public reference) ----------------
+# -- SUBSCRIPTION PLANS -----------------------------------
 
 @route("GET", r"/api/plans")
 def get_plans(body, params, **_):
-    plans = [
-        {"id": k, **v} for k, v in logic.SUBSCRIPTION_PLANS.items()
-    ]
+    plans = [{"id": k, **v} for k, v in logic.SUBSCRIPTION_PLANS.items()]
     return ok(plans)
+
+
+# -- CLOCK RECORDS ----------------------------------------
+
+@route("POST", r"/api/clock")
+def clock_action(body, params, **_):
+    import uuid
+    cleaner_id = body.get("cleaner_id")
+    action     = body.get("action")   # "in" or "out"
+    timestamp  = body.get("timestamp")
+    date       = body.get("date")
+    if not all([cleaner_id, action, timestamp, date]):
+        return err("Missing required fields: cleaner_id, action, timestamp, date")
+    existing = db.fetchone(
+        "SELECT * FROM clock_records WHERE cleaner_id=? AND date=?",
+        (cleaner_id, date)
+    )
+    if action == "in":
+        if existing:
+            db.execute(
+                "UPDATE clock_records SET clock_in=?, clock_out=NULL WHERE cleaner_id=? AND date=?",
+                (timestamp, cleaner_id, date)
+            )
+        else:
+            db.execute(
+                "INSERT INTO clock_records (id, cleaner_id, date, clock_in) VALUES (?,?,?,?)",
+                (str(uuid.uuid4()), cleaner_id, date, timestamp)
+            )
+    elif action == "out":
+        if not existing:
+            return err("Cannot clock out — no clock-in record found for today")
+        db.execute(
+            "UPDATE clock_records SET clock_out=? WHERE cleaner_id=? AND date=?",
+            (timestamp, cleaner_id, date)
+        )
+    else:
+        return err("action must be 'in' or 'out'")
+    record = db.fetchone(
+        "SELECT * FROM clock_records WHERE cleaner_id=? AND date=?",
+        (cleaner_id, date)
+    )
+    return ok(record)
+
+
+@route("GET", r"/api/clock")
+def get_clock_records(body, params, **_):
+    cleaner_id = params.get("cleaner_id", [None])[0]
+    date       = params.get("date", [None])[0]
+    if cleaner_id and date:
+        record = db.fetchone(
+            "SELECT * FROM clock_records WHERE cleaner_id=? AND date=?",
+            (cleaner_id, date)
+        )
+        return ok(record)
+    elif cleaner_id:
+        records = db.fetchall(
+            "SELECT * FROM clock_records WHERE cleaner_id=? ORDER BY date DESC",
+            (cleaner_id,)
+        )
+        return ok(records)
+    else:
+        # Admin view — all cleaners with their names
+        records = db.fetchall(
+            "SELECT cr.*, u.name as cleaner_name, u.phone as cleaner_phone "
+            "FROM clock_records cr "
+            "JOIN users u ON cr.cleaner_id = u.id "
+            "ORDER BY cr.date DESC, cr.clock_in DESC "
+            "LIMIT 200"
+        )
+        return ok(records)
+
+
+@route("PATCH", r"/api/clock/(?P<record_id>[^/]+)/approve")
+def approve_clock(body, params, record_id, **_):
+    approved_hours = body.get("approved_hours")
+    admin_id       = body.get("admin_id")
+    notes          = body.get("notes", "")
+    if approved_hours is None or not admin_id:
+        return err("approved_hours and admin_id are required")
+    db.execute(
+        "UPDATE clock_records SET approved=1, approved_hours=?, approved_by=?, notes=? WHERE id=?",
+        (float(approved_hours), admin_id, notes, record_id)
+    )
+    record = db.fetchone("SELECT * FROM clock_records WHERE id=?", (record_id,))
+    if not record:
+        return not_found("Clock record")
+    return ok(record)
+
+
+@route("DELETE", r"/api/clock/(?P<record_id>[^/]+)")
+def delete_clock_record(body, params, record_id, **_):
+    """Admin can delete a clock record if entered in error."""
+    db.execute("DELETE FROM clock_records WHERE id=?", (record_id,))
+    return ok({"deleted": record_id})
 
 
 # ---------------------------------------------------------
@@ -571,9 +624,9 @@ class FinisioHandler(BaseHTTPRequestHandler):
             return {}
 
     def _dispatch(self, method):
-        parsed  = urlparse(self.path)
-        path    = parsed.path.rstrip("/") or "/"
-        params  = parse_qs(parsed.query)
+        parsed = urlparse(self.path)
+        path   = parsed.path.rstrip("/") or "/"
+        params = parse_qs(parsed.query)
 
         for route_method, pattern, handler in ROUTES:
             if route_method != method:
@@ -604,10 +657,7 @@ class FinisioHandler(BaseHTTPRequestHandler):
 
 def main():
     global PORT
-    # Allow: python3 server.py --port 9000
-    for i, arg in enumerate(sys.argv[1:], 1):
-        if arg == "--port" and i < len(sys.argv):
-            PORT = int(sys.argv[i + 1])
+    PORT = int(os.environ.get("PORT", 8000))
 
     print("=" * 52)
     print("  FINISIO CLEANS - API Server")

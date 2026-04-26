@@ -37,8 +37,8 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE TABLE IF NOT EXISTS cleaner_profiles (
     user_id             TEXT PRIMARY KEY REFERENCES users(id),
     approved_status     TEXT DEFAULT 'pending' CHECK(approved_status IN ('pending','approved','rejected')),
-    service_areas       TEXT,           -- JSON array stored as text
-    skills              TEXT,           -- JSON array stored as text
+    service_areas       TEXT,
+    skills              TEXT,
     rating              REAL DEFAULT 0.0,
     total_jobs_completed INTEGER DEFAULT 0,
     id_document_url     TEXT,
@@ -73,7 +73,7 @@ CREATE TABLE IF NOT EXISTS bookings (
     scheduled_time  TEXT,
     address         TEXT,
     notes           TEXT,
-    media_urls      TEXT,               -- JSON array
+    media_urls      TEXT,
     hours_booked    REAL,
     amount_scr      REAL,
     created_at      TEXT DEFAULT (datetime('now')),
@@ -97,7 +97,7 @@ CREATE TABLE IF NOT EXISTS payments (
     amount_scr      REAL NOT NULL,
     payment_method  TEXT DEFAULT 'bank_transfer' CHECK(payment_method IN ('bank_transfer','manual','cash')),
     status          TEXT DEFAULT 'pending' CHECK(status IN ('pending','confirmed','rejected')),
-    reference_no    TEXT,               -- bank reference / proof note
+    reference_no    TEXT,
     confirmed_by    TEXT REFERENCES users(id),
     confirmed_at    TEXT,
     created_at      TEXT DEFAULT (datetime('now'))
@@ -148,6 +148,20 @@ CREATE TABLE IF NOT EXISTS disputes (
     created_at  TEXT DEFAULT (datetime('now')),
     resolved_at TEXT
 );
+
+CREATE TABLE IF NOT EXISTS clock_records (
+    id              TEXT PRIMARY KEY,
+    cleaner_id      TEXT NOT NULL REFERENCES users(id),
+    date            TEXT NOT NULL,
+    clock_in        TEXT,
+    clock_out       TEXT,
+    approved        INTEGER DEFAULT 0,
+    approved_hours  REAL,
+    approved_by     TEXT REFERENCES users(id),
+    notes           TEXT,
+    created_at      TEXT DEFAULT (datetime('now')),
+    UNIQUE(cleaner_id, date)
+);
 """
 
 INDEXES = """
@@ -158,6 +172,8 @@ CREATE INDEX IF NOT EXISTS idx_messages_sender     ON messages(sender_id);
 CREATE INDEX IF NOT EXISTS idx_messages_receiver   ON messages(receiver_id);
 CREATE INDEX IF NOT EXISTS idx_payments_booking    ON payments(booking_id);
 CREATE INDEX IF NOT EXISTS idx_commissions_booking ON commissions(booking_id);
+CREATE INDEX IF NOT EXISTS idx_clock_cleaner       ON clock_records(cleaner_id);
+CREATE INDEX IF NOT EXISTS idx_clock_date          ON clock_records(date);
 """
 
 
