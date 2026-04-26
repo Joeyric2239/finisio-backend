@@ -16,7 +16,7 @@ from urllib.parse import urlparse, parse_qs
 import db
 import logic
 
-PORT = 8080
+PORT = int(os.environ.get("PORT", 8080))
 
 # ---------------------------------------------------------
 #  RESPONSE HELPERS
