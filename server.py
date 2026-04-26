@@ -16,7 +16,7 @@ from urllib.parse import urlparse, parse_qs
 import db
 import logic
 
-PORT = 8000
+PORT = 8080
 
 # ---------------------------------------------------------
 #  RESPONSE HELPERS
@@ -657,7 +657,7 @@ class FinisioHandler(BaseHTTPRequestHandler):
 
 def main():
     global PORT
-    PORT = int(os.environ.get("PORT", 8000))
+    PORT = int(os.environ.get("PORT", 8080))
 
     print("=" * 52)
     print("  FINISIO CLEANS - API Server")
