@@ -9,6 +9,7 @@ import hashlib
 import json
 from datetime import datetime, timedelta
 import db
+import auth
 
 # ---------------------------------------------------------
 #  CONSTANTS
@@ -48,10 +49,13 @@ def now_iso():
 
 
 def hash_password(password: str) -> str:
+    """LEGACY sha256 hash — kept for backwards compatibility only.
+    All new passwords use auth.hash_password_bcrypt() instead."""
     return hashlib.sha256(password.encode()).hexdigest()
 
 
 def verify_password(plain: str, hashed: str) -> bool:
+    """LEGACY verify — auth.verify_password() handles both bcrypt and sha256."""
     return hash_password(plain) == hashed
 
 
@@ -73,7 +77,9 @@ def from_json(text) -> list:
 # ---------------------------------------------------------
 
 def create_user(name, email, role, phone=None, address=None, password=None):
-    """Create a user. If role=cleaner, also creates a cleaner profile."""
+    """Create a user. If role=cleaner, also creates a cleaner profile.
+    New users are hashed with bcrypt (strong). Old sha256 users get
+    auto-upgraded next time they log in."""
     if role not in ("customer", "cleaner", "admin"):
         raise ValueError("role must be customer, cleaner, or admin")
 
@@ -83,7 +89,13 @@ def create_user(name, email, role, phone=None, address=None, password=None):
         raise ValueError(f"Email already registered: {email}")
 
     uid = new_id()
-    pw_hash = hash_password(password) if password else hash_password(new_id())
+
+    # Hash with bcrypt (new users always get the strong hash)
+    if password:
+        pw_hash = auth.hash_password_bcrypt(password)
+    else:
+        # Random unguessable hash for users without a password (e.g. seed data)
+        pw_hash = auth.hash_password_bcrypt(new_id())
 
     db.execute(
         """INSERT INTO users (id,name,email,role,phone,address,password_hash,created_at)
