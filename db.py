@@ -1,6 +1,9 @@
 """
 FINISIO CLEANS - Database Layer
 PostgreSQL with SQLite fallback for local dev.
+
+Phase 1.5 additions: signup_country, signup_city, signup_ip columns on users.
+Migration runs on init_db() to add these columns to existing tables.
 """
 
 import os
@@ -40,6 +43,9 @@ CREATE TABLE IF NOT EXISTS users (
     address             TEXT,
     password_hash       TEXT,
     verification_status TEXT DEFAULT 'unverified',
+    signup_country      TEXT,
+    signup_city         TEXT,
+    signup_ip           TEXT,
     created_at          TEXT DEFAULT (to_char(now(),'YYYY-MM-DD"T"HH24:MI:SS"Z"'))
 );
 
@@ -183,6 +189,9 @@ CREATE TABLE IF NOT EXISTS users (
     address             TEXT,
     password_hash       TEXT,
     verification_status TEXT DEFAULT 'unverified',
+    signup_country      TEXT,
+    signup_city         TEXT,
+    signup_ip           TEXT,
     created_at          TEXT DEFAULT (datetime('now'))
 );
 
@@ -329,6 +338,22 @@ CREATE INDEX IF NOT EXISTS idx_clock_date          ON clock_records(date);
 """
 
 
+# Migration steps: column additions to existing tables.
+# Safe to run repeatedly — each ALTER is wrapped in a try/except.
+PG_MIGRATIONS = [
+    "ALTER TABLE users ADD COLUMN IF NOT EXISTS signup_country TEXT",
+    "ALTER TABLE users ADD COLUMN IF NOT EXISTS signup_city TEXT",
+    "ALTER TABLE users ADD COLUMN IF NOT EXISTS signup_ip TEXT",
+]
+
+# SQLite doesn't support ADD COLUMN IF NOT EXISTS, so we check first.
+SQLITE_MIGRATION_COLUMNS = [
+    ("users", "signup_country", "TEXT"),
+    ("users", "signup_city",    "TEXT"),
+    ("users", "signup_ip",      "TEXT"),
+]
+
+
 def init_db():
     if USE_POSTGRES:
         conn = get_conn()
@@ -341,6 +366,17 @@ def init_db():
             except Exception as e:
                 print(f"[DB] Warning: {e}")
         conn.commit()
+        # Apply migrations (column additions to existing tables)
+        for stmt in PG_MIGRATIONS:
+            try:
+                cur.execute(stmt)
+                conn.commit()
+            except Exception as e:
+                # Ignore "column already exists" — only flag unexpected errors
+                conn.rollback()
+                msg = str(e).lower()
+                if "already exists" not in msg:
+                    print(f"[DB] Migration warning: {e}")
         cur.close()
         conn.close()
         print("[DB] Initialised -> PostgreSQL")
@@ -348,6 +384,15 @@ def init_db():
         with get_conn() as conn:
             conn.executescript(SCHEMA_SQLITE)
             conn.executescript(INDEXES_SQLITE)
+            # SQLite migrations — check for column existence first
+            for table, col, coltype in SQLITE_MIGRATION_COLUMNS:
+                try:
+                    rows = conn.execute(f"PRAGMA table_info({table})").fetchall()
+                    existing_cols = [r["name"] for r in rows]
+                    if col not in existing_cols:
+                        conn.execute(f"ALTER TABLE {table} ADD COLUMN {col} {coltype}")
+                except Exception as e:
+                    print(f"[DB] Migration warning: {e}")
         print(f"[DB] Initialised -> {DB_PATH}")
 
 

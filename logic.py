@@ -2,6 +2,10 @@
 FINISIO CLEANS - Core Business Logic
 All platform rules, commission calculations, subscription management,
 job workflow transitions, and validation.
+
+Phase 1.5 additions:
+  - create_user accepts signup_country, signup_city, signup_ip
+  - list_users / get_user automatically include those fields (admin can see them)
 """
 
 import uuid
@@ -76,10 +80,12 @@ def from_json(text) -> list:
 #  USERS
 # ---------------------------------------------------------
 
-def create_user(name, email, role, phone=None, address=None, password=None):
+def create_user(name, email, role, phone=None, address=None, password=None,
+                signup_country=None, signup_city=None, signup_ip=None):
     """Create a user. If role=cleaner, also creates a cleaner profile.
     New users are hashed with bcrypt (strong). Old sha256 users get
-    auto-upgraded next time they log in."""
+    auto-upgraded next time they log in.
+    Phase 1.5: signup location captured (country/city from frontend, IP from server)."""
     if role not in ("customer", "cleaner", "admin"):
         raise ValueError("role must be customer, cleaner, or admin")
 
@@ -94,13 +100,19 @@ def create_user(name, email, role, phone=None, address=None, password=None):
     if password:
         pw_hash = auth.hash_password_bcrypt(password)
     else:
-        # Random unguessable hash for users without a password (e.g. seed data)
         pw_hash = auth.hash_password_bcrypt(new_id())
 
+    # Trim/sanitise location strings — accept None happily
+    sc = (signup_country or "").strip() or None
+    si = (signup_city or "").strip() or None
+    sip = (signup_ip or "").strip() or None
+
     db.execute(
-        """INSERT INTO users (id,name,email,role,phone,address,password_hash,created_at)
-           VALUES (?,?,?,?,?,?,?,?)""",
-        (uid, name, email, role, phone, address, pw_hash, now_iso())
+        """INSERT INTO users
+           (id,name,email,role,phone,address,password_hash,
+            signup_country,signup_city,signup_ip,created_at)
+           VALUES (?,?,?,?,?,?,?,?,?,?,?)""",
+        (uid, name, email, role, phone, address, pw_hash, sc, si, sip, now_iso())
     )
 
     # Auto-create cleaner profile
@@ -143,7 +155,6 @@ def list_users(role=None):
 def update_cleaner_profile(user_id, service_areas=None, skills=None,
                             experience_years=None, id_document_url=None):
     """Update cleaner profile details."""
-    # ensure user exists and is a cleaner
     user = db.fetchone("SELECT * FROM users WHERE id=? AND role='cleaner'", (user_id,))
     if not user:
         raise ValueError("Cleaner not found")
@@ -179,7 +190,6 @@ def approve_cleaner(user_id, admin_id, approve: bool):
         "UPDATE cleaner_profiles SET approved_status=?, approved_at=? WHERE user_id=?",
         (status, approved_at, user_id)
     )
-    # Also update user verification_status
     db.execute(
         "UPDATE users SET verification_status=? WHERE id=?",
         ("verified" if approve else "rejected", user_id)
@@ -198,6 +208,7 @@ def get_cleaner_profile(user_id):
 def list_cleaners(approved_only=True):
     sql = """
         SELECT u.id, u.name, u.email, u.phone, u.verification_status,
+               u.signup_country, u.signup_city, u.signup_ip,
                cp.approved_status, cp.service_areas, cp.skills,
                cp.rating, cp.total_jobs_completed, cp.experience_years
         FROM users u
@@ -240,7 +251,6 @@ def create_subscription(customer_id, plan_type):
     if not customer:
         raise ValueError("Customer not found")
 
-    # Cancel any existing active subscription
     db.execute(
         "UPDATE subscriptions SET status='cancelled' WHERE customer_id=? AND status='active'",
         (customer_id,)
@@ -322,10 +332,8 @@ def create_booking(customer_id, service_type, booking_type,
     if booking_type not in ("subscription", "one_time"):
         raise ValueError("booking_type must be subscription or one_time")
 
-    # Subscription booking: validate and reserve hours
     if booking_type == "subscription":
         if not subscription_id:
-            # Auto-find active subscription
             active_sub = get_active_subscription(customer_id)
             if not active_sub:
                 raise ValueError("No active subscription found. Please subscribe first.")
@@ -333,7 +341,6 @@ def create_booking(customer_id, service_type, booking_type,
         if hours_booked:
             deduct_subscription_hours(subscription_id, hours_booked)
 
-    # Determine amount
     amount = _calculate_booking_amount(service_type, booking_type, hours_booked, subscription_id)
 
     booking_id = new_id()
@@ -348,7 +355,6 @@ def create_booking(customer_id, service_type, booking_type,
          to_json(media_urls or []), hours_booked, amount, now_iso(), now_iso())
     )
 
-    # Log initial status
     _log_status_change(booking_id, None, "pending", customer_id, "Booking created")
 
     return get_booking(booking_id)
@@ -359,9 +365,7 @@ def _calculate_booking_amount(service_type, booking_type, hours, sub_id):
     if booking_type == "subscription" and sub_id:
         sub = get_subscription(sub_id)
         if sub:
-            # Subscription bookings are covered by plan price (already paid monthly)
             return 0.0
-    # One-time flat rate: post_construction slightly higher
     rates = {"home_deep": 300, "post_construction": 380}
     rate = rates.get(service_type, 300)
     return rate * (hours or 1)
@@ -435,7 +439,6 @@ def assign_cleaner(booking_id, cleaner_id, admin_id):
     if booking["status"] == "completed":
         raise ValueError(f"Cannot reassign a completed booking. Current: {booking['status']}")
 
-    # Verify cleaner is approved
     cleaner = db.fetchone(
         "SELECT cp.approved_status FROM cleaner_profiles cp WHERE cp.user_id=?",
         (cleaner_id,)
@@ -470,7 +473,6 @@ def update_job_status(booking_id, new_status, changed_by_id, note=None):
     )
     _log_status_change(booking_id, current, new_status, changed_by_id, note)
 
-    # When completed, increment cleaner job count
     if new_status == "completed" and booking.get("cleaner_id"):
         db.execute(
             "UPDATE cleaner_profiles SET total_jobs_completed = total_jobs_completed + 1 WHERE user_id=?",
@@ -535,7 +537,6 @@ def confirm_payment(payment_id, admin_id, reference_no=None):
         (admin_id, now_iso(), reference_no, payment_id)
     )
 
-    # Auto-calculate commission on confirmation
     commission = calculate_commission(payment["booking_id"], payment_id)
 
     return {"payment": get_payment(payment_id), "commission": commission}
@@ -574,7 +575,6 @@ def calculate_commission(booking_id, payment_id=None):
     if not booking:
         raise ValueError("Booking not found")
 
-    # Get the confirmed payment amount
     payment = None
     if payment_id:
         payment = get_payment(payment_id)
@@ -589,7 +589,6 @@ def calculate_commission(booking_id, payment_id=None):
     platform_share = round(total * (PLATFORM_COMMISSION_PCT / 100), 2)
     cleaner_share  = round(total * (CLEANER_SHARE_PCT / 100), 2)
 
-    # Upsert commission record
     existing = db.fetchone("SELECT * FROM commissions WHERE booking_id=?", (booking_id,))
     if existing:
         db.execute(
@@ -663,7 +662,6 @@ def submit_review(booking_id, customer_id, rating, comment=None):
            VALUES (?,?,?,?,?,?,?)""",
         (review_id, booking_id, customer_id, booking["cleaner_id"], rating, comment, now_iso())
     )
-    # Recalculate cleaner rating
     update_cleaner_rating(booking["cleaner_id"])
     return db.fetchone("SELECT * FROM reviews WHERE id=?", (review_id,))
 

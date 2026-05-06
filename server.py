@@ -2,12 +2,8 @@
 FINISIO CLEANS - HTTP API Server
 Pure Python stdlib HTTP server.
 
-Phase 1 security upgrades (compatibility mode):
-  - JWT auth middleware (optional — old clients still work)
-  - /api/auth/login endpoint with bcrypt verification
-  - /api/users GET locked down to admin-only
-  - Password auto-upgrade from sha256 to bcrypt on successful login
-  - Strict mode toggle via STRICT_AUTH env var (default: off)
+Phase 1 security: JWT auth, bcrypt passwords, /api/auth/login, locked /api/users.
+Phase 1.5: Server-side client IP capture for signups + frontend country/city.
 
 Run:  python3 server.py
       python3 server.py --port 9000
@@ -95,17 +91,14 @@ def login(body, params, **_):
     if not email or not password:
         return err("Email and password are required")
 
-    # Look up user (we need the password_hash so we go to db directly, not get_user)
     user_row = db.fetchone("SELECT * FROM users WHERE LOWER(email)=?", (email,))
     if not user_row:
-        # Don't reveal whether the email exists — same error for both cases
         return unauthorized("Invalid email or password")
 
     stored_hash = user_row.get("password_hash")
     if not auth.verify_password(password, stored_hash):
         return unauthorized("Invalid email or password")
 
-    # Successful login — upgrade hash to bcrypt if it's still sha256
     if auth.needs_upgrade(stored_hash):
         try:
             new_hash = auth.hash_password_bcrypt(password)
@@ -115,13 +108,10 @@ def login(body, params, **_):
             )
             print(f"[AUTH] Upgraded password hash to bcrypt for user {user_row['id']}")
         except Exception as e:
-            # Hash upgrade failure shouldn't block login
             print(f"[AUTH] Hash upgrade failed for {user_row['id']}: {e}")
 
-    # Issue JWT
     token = auth.issue_token(user_row["id"], user_row["role"])
 
-    # Return user (without password_hash) and token
     safe_user = {k: v for k, v in user_row.items() if k != "password_hash"}
     return ok({"token": token, "user": safe_user})
 
@@ -130,7 +120,6 @@ def login(body, params, **_):
 def verify_session(body, params, _auth=None, **_):
     """
     Verify a JWT is still valid. Returns the user if valid.
-    Frontend can call this on app load to check if the saved session is still good.
     """
     if not _auth:
         return unauthorized("Invalid or expired token")
@@ -149,7 +138,7 @@ def health(body, params, **_):
     return ok({
         "status": "ok",
         "service": "Finisio Cleans API",
-        "version": "1.1.0",
+        "version": "1.5.0",
         "auth_mode": "strict" if STRICT_AUTH else "compatibility",
     })
 
@@ -159,23 +148,27 @@ def health(body, params, **_):
 # ---------------------------------------------------------
 
 @route("POST", r"/api/users")
-def create_user(body, params, **_):
-    """Public — anyone can sign up."""
+def create_user(body, params, _client_ip=None, **_):
+    """Public — anyone can sign up. Captures location for audit trail."""
     required = ["name", "email", "role"]
     for f in required:
         if f not in body:
             return err(f"Missing field: {f}")
-    # Block direct admin creation via signup
     if body.get("role") == "admin":
         return forbidden("Admin accounts cannot be created via signup")
     try:
+        # Server-captured IP always wins over what frontend sends —
+        # frontend can lie, server can't be lied to.
         user = logic.create_user(
-            name     = body["name"],
-            email    = body["email"],
-            role     = body["role"],
-            phone    = body.get("phone"),
-            address  = body.get("address"),
-            password = body.get("password"),
+            name           = body["name"],
+            email          = body["email"],
+            role           = body["role"],
+            phone          = body.get("phone"),
+            address        = body.get("address"),
+            password       = body.get("password"),
+            signup_country = body.get("signup_country"),
+            signup_city    = body.get("signup_city"),
+            signup_ip      = _client_ip or body.get("signup_ip"),
         )
         return created(user)
     except ValueError as e:
@@ -184,7 +177,7 @@ def create_user(body, params, **_):
 
 @route("GET", r"/api/users", auth_required=True, admin_only=True)
 def list_users(body, params, _auth=None, **_):
-    """LOCKED DOWN — admin-only. Was previously wide open."""
+    """LOCKED DOWN — admin-only."""
     role = params.get("role", [None])[0]
     return ok(logic.list_users(role))
 
@@ -192,9 +185,8 @@ def list_users(body, params, _auth=None, **_):
 @route("GET", r"/api/users/by-email")
 def get_user_by_email(body, params, _auth=None, **_):
     """
-    Look up a single user by email.
+    Look up a single user by email — minimal info only.
     Used by Google Sign-In to check if an account already exists.
-    Returns minimal info (id, role, name) — never the password hash.
     """
     email = (params.get("email", [""])[0] or "").strip().lower()
     if not email:
@@ -210,9 +202,7 @@ def get_user_by_email(body, params, _auth=None, **_):
 
 @route("GET", r"/api/users/(?P<user_id>[^/]+)", auth_required=True)
 def get_user(body, params, user_id, _auth=None, **_):
-    """
-    A user can fetch their own record. Admins can fetch anyone's.
-    """
+    """A user can fetch their own record. Admins can fetch anyone's."""
     if _auth and _auth["sub"] != user_id and _auth["role"] != "admin":
         return forbidden("You can only access your own user record")
     user = logic.get_user(user_id)
@@ -276,7 +266,6 @@ def update_cleaner(body, params, user_id, _auth=None, **_):
 
 @route("POST", r"/api/cleaners/(?P<user_id>[^/]+)/approve", auth_required=True, admin_only=True)
 def approve_cleaner(body, params, user_id, _auth=None, **_):
-    # admin_id now comes from the JWT, not a body claim that anyone could fake
     admin_id = _auth["sub"] if _auth else body.get("admin_id")
     approve  = body.get("approve", True)
     if not admin_id:
@@ -380,7 +369,6 @@ def get_booking(body, params, booking_id, _auth=None, **_):
     booking = logic.get_booking(booking_id)
     if not booking:
         return not_found("Booking")
-    # Customer can see their own, cleaner can see assigned, admin sees all
     if _auth and _auth["role"] != "admin":
         if _auth["sub"] not in (booking.get("customer_id"), booking.get("cleaner_id")):
             return forbidden()
@@ -585,7 +573,6 @@ def get_messages(body, params, _auth=None, **_):
     booking_id = params.get("booking_id", [None])[0]
     if not user_a or not user_b:
         return err("user_a and user_b query params required")
-    # Caller must be one of the participants (or admin)
     if _auth and _auth["sub"] not in (user_a, user_b) and _auth["role"] != "admin":
         return forbidden()
     msgs = logic.get_conversation(user_a, user_b, booking_id)
@@ -695,7 +682,6 @@ def clock_action(body, params, _auth=None, **_):
 def get_clock_records(body, params, _auth=None, **_):
     cleaner_id = params.get("cleaner_id", [None])[0]
     date       = params.get("date", [None])[0]
-    # Cleaners can only fetch their own records, admins can fetch anything
     if _auth and _auth["role"] != "admin":
         if not cleaner_id or cleaner_id != _auth["sub"]:
             return forbidden("You can only view your own clock records")
@@ -712,7 +698,6 @@ def get_clock_records(body, params, _auth=None, **_):
         )
         return ok(records)
     else:
-        # Admin view — all cleaners with their names
         records = db.fetchall(
             "SELECT cr.*, u.name as cleaner_name, u.phone as cleaner_phone "
             "FROM clock_records cr "
@@ -766,7 +751,6 @@ class FinisioHandler(BaseHTTPRequestHandler):
         self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Access-Control-Allow-Methods", "GET, POST, PATCH, DELETE, OPTIONS")
         self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization")
-        # Phase 1 hardening — small, safe headers
         self.send_header("X-Content-Type-Options", "nosniff")
         self.send_header("X-Frame-Options", "DENY")
         self.send_header("Referrer-Policy", "no-referrer")
@@ -797,6 +781,30 @@ class FinisioHandler(BaseHTTPRequestHandler):
         token = auth.extract_token_from_header(self.headers.get("Authorization"))
         return auth.verify_token(token)
 
+    def _get_client_ip(self):
+        """
+        Extract the real client IP, accounting for Railway's reverse proxy.
+        Order:
+          1. X-Forwarded-For (Railway/Cloudflare/standard proxy header) — leftmost is original client
+          2. X-Real-IP (some proxies use this)
+          3. self.client_address (direct connection — only if no proxy)
+        """
+        # X-Forwarded-For can be a comma-separated list — first IP is the original
+        xff = self.headers.get("X-Forwarded-For", "")
+        if xff:
+            # Take the first IP, strip whitespace
+            first_ip = xff.split(",")[0].strip()
+            if first_ip:
+                return first_ip
+        xri = self.headers.get("X-Real-IP", "")
+        if xri:
+            return xri.strip()
+        # Fallback — direct connection
+        try:
+            return self.client_address[0]
+        except Exception:
+            return None
+
     def _dispatch(self, method):
         parsed = urlparse(self.path)
         path   = parsed.path.rstrip("/") or "/"
@@ -809,19 +817,14 @@ class FinisioHandler(BaseHTTPRequestHandler):
             if not m:
                 continue
 
-            # Match found — handle auth before dispatching
             auth_payload = self._get_auth_payload()
+            client_ip = self._get_client_ip()
 
-            # In strict mode, auth_required routes must have a valid token
             if r["auth_required"] and not auth_payload:
                 if STRICT_AUTH:
                     self._send(401, {"ok": False, "error": "Authentication required"})
                     return
-                # Compatibility mode — allow through but log it
-                # (so we can monitor what's still calling without tokens)
 
-            # admin_only is always enforced if a token is present
-            # In strict mode it's enforced regardless
             if r["admin_only"]:
                 if STRICT_AUTH and (not auth_payload or auth_payload.get("role") != "admin"):
                     self._send(403, {"ok": False, "error": "Admin access required"})
@@ -837,6 +840,7 @@ class FinisioHandler(BaseHTTPRequestHandler):
                     body=body,
                     params=params,
                     _auth=auth_payload,
+                    _client_ip=client_ip,
                     **kwargs
                 )
                 self._send(status, payload)
@@ -862,12 +866,13 @@ def main():
     PORT = int(os.environ.get("PORT", 8080))
 
     print("=" * 52)
-    print("  FINISIO CLEANS - API Server")
+    print("  FINISIO CLEANS - API Server (v1.5.0)")
     print("=" * 52)
     db.init_db()
 
     print(f"  Auth mode:    {'STRICT' if STRICT_AUTH else 'COMPATIBILITY (old clients allowed)'}")
     print(f"  JWT secret:   {'CONFIGURED' if os.environ.get('JWT_SECRET') else 'MISSING — SET JWT_SECRET ON RAILWAY'}")
+    print(f"  IP capture:   ENABLED (X-Forwarded-For aware)")
 
     httpd = HTTPServer(("0.0.0.0", PORT), FinisioHandler)
     print(f"  Listening on  http://localhost:{PORT}")
